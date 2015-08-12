@@ -12,6 +12,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import db.LitbDBPool;
@@ -62,20 +63,20 @@ public class VipPageRecommInfo
 	
 	private static final String find_vip_id_sql_str =
 			"select * "
-			+" from recom_user_maybe_buy "
-//			+" from test_user_maybe_buy "
+//			+" from recom_user_maybe_buy "
+			+" from test_user_maybe_buy "
 			+" where user_id in( %s ) ";
 	
 	private static final String update_sql_str =
-			 " update recom_user_maybe_buy "
-//			" update test_user_maybe_buy "
+//			 " update recom_user_maybe_buy "
+			" update test_user_maybe_buy "
 		    +" set recommends = '%s' "
 		    +" , update_date = now() "
 		    +" where user_id = %d ";
 			
 	private static final String insert_sql_str = 
-			 " insert recom_user_maybe_buy "
-//			" insert test_user_maybe_buy "
+//			 " insert recom_user_maybe_buy "
+			" insert test_user_maybe_buy "
 			+" (site_id, user_id, recommends, status, update_date) "
 			+" values ( %d, %d, '%s', %d, now()) "
 			;
@@ -296,6 +297,9 @@ public class VipPageRecommInfo
 				
 			}
 			
+			// 保存所有update/insert语句
+			ArrayList<String> batch_sql_list = new ArrayList<>();
+						
 			for(long id_key : id2ExistMap.keySet())
 			{
 				String recomm_goods_ids = id2RecommIdsMap.get(id_key + "");
@@ -306,15 +310,21 @@ public class VipPageRecommInfo
 				{
 					// 新增的id在原表中存在, update操作
 					
-					updateVipRecommGoodsIds(helper, id_key, recomm_goods_ids);
+					String update_sql = updateVipRecommGoodsIds(helper, id_key, recomm_goods_ids);
+					batch_sql_list.add(update_sql);
 				}
 				else if (id2ExistMap.get(id_key).equals("0"))
 				{
 					// 新增的id在原表中不存在, insert操作
 					
-					insertVipRecommGoodsIds(helper, id_key, recomm_goods_ids);
+					String insert_sql = insertVipRecommGoodsIds(helper, id_key, recomm_goods_ids);
+					batch_sql_list.add(insert_sql);
 				}
 			}
+			
+			// 批量update/insert操作
+			helper.executeUpdates(batch_sql_list);
+			
 		} 
 		catch (FileNotFoundException e)
 		{
@@ -361,38 +371,42 @@ public class VipPageRecommInfo
 	}
 	
 	// 更新数据库中vip id 对应的推荐信息
-	public static void updateVipRecommGoodsIds(DBHelper helper, long vip_id, String vip_recomm_goods_ids)
+	public static String updateVipRecommGoodsIds(DBHelper helper, long vip_id, String vip_recomm_goods_ids)
 	{
 		String update_vip_id_sql = String.format(update_sql_str, vip_recomm_goods_ids, vip_id);
 		
-		try
-		{
+//		try
+//		{
 			System.out.println(update_vip_id_sql);
-			helper.executeUpdate(update_vip_id_sql);
-		}
-		catch(SQLException e)
-		{
-			e.printStackTrace();
-		}
+//			helper.executeUpdate(update_vip_id_sql);
+//		}
+//		catch(SQLException e)
+//		{
+//			e.printStackTrace();
+//		}
+			
+		return update_vip_id_sql;
 	}
 	
 	
 	// 增加数据库中 vip id 对应的推荐信息
-	public static void insertVipRecommGoodsIds(DBHelper helper, long vip_id, String vip_recomm_goods_ids)
+	public static String insertVipRecommGoodsIds(DBHelper helper, long vip_id, String vip_recomm_goods_ids)
 	{
 		int site_id = 1;
 		int status = 1;
 		
 		String insert_vip_id_sql = String.format(insert_sql_str, site_id, vip_id, vip_recomm_goods_ids, status);
 		
-		try
-		{
+//		try
+//		{
 			System.out.println(insert_vip_id_sql);
-			helper.executeUpdate(insert_vip_id_sql);
-		}
-		catch(SQLException e)
-		{
-			e.printStackTrace();
-		}
+//			helper.executeUpdate(insert_vip_id_sql);
+//		}
+//		catch(SQLException e)
+//		{
+//			e.printStackTrace();
+//		}
+			
+		return insert_vip_id_sql;
 	}
 }
